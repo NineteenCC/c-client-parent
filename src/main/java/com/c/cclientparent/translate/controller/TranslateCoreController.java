@@ -1,11 +1,9 @@
 package com.c.cclientparent.translate.controller;
 
 import com.c.cclientparent.common.result.ResponseBean;
-import com.c.cclientparent.translate.pojo.TranslateInfo;
 import com.c.cclientparent.translate.service.TranslateCoreService;
+import com.c.cclientparent.translate.vo.TranslateInfoVo;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.annotations.Param;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,7 +55,7 @@ public class TranslateCoreController {
     @GetMapping("/getSupportLanguage")
     public ResponseBean<List<String>> getSupportLanguage(){
         List<String> supportLanguageVoList = this.translateCoreService.getSupportLanguage();
-        return ResponseBean.failed(supportLanguageVoList);
+        return ResponseBean.success(supportLanguageVoList);
     }
 
 
@@ -75,7 +73,7 @@ public class TranslateCoreController {
     }
 
     @GetMapping("/getFileList")
-    public ResponseBean<List<TranslateInfo>> getFileList(){
+    public ResponseBean<List<TranslateInfoVo>> getFileList(){
         return ResponseBean.success(this.translateCoreService.getFileList());
     }
 

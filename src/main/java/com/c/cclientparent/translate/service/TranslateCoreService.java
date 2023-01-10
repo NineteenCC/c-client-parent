@@ -2,6 +2,7 @@ package com.c.cclientparent.translate.service;
 
 import com.c.cclientparent.translate.pojo.TranslateInfo;
 import com.c.cclientparent.translate.vo.SupportLanguageVo;
+import com.c.cclientparent.translate.vo.TranslateInfoVo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -48,7 +49,7 @@ public interface TranslateCoreService {
      * 获取当前登录用户上传的文件列表
      * @return 文件列表
      */
-    List<TranslateInfo> getFileList();
+    List<TranslateInfoVo> getFileList();
 
     /**
      * 开始翻译

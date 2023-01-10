@@ -1,27 +1,29 @@
 package com.c.cclientparent.oss.helper;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.c.cclientparent.common.exception.ServiceException;
-import com.c.cclientparent.fanyigou.requestpojo.result.BaseResult;
+import com.c.cclientparent.common.util.ServiceAssert;
 import com.c.cclientparent.oss.config.OssProperties;
 import com.c.cclientparent.oss.constants.OssConstant;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- *
- *
  * @author Nineteen
  * @since 1.0.0 [2023/1/2 19:30]
  */
@@ -38,29 +40,60 @@ public class OssHelper {
         this.ossProperties = ossProperties;
     }
 
-
-    public String uploadFile(MultipartFile multipartFile){
-        Assert.notNull(multipartFile, "oss upload file is null");
+    public String uploadFile(InputStream inputStream, String fileName) {
+        ServiceAssert.notNull(inputStream, "oss upload file is null");
         PutObjectRequest putObjectRequest;
         String fileSavePath;
-        Long size = multipartFile.getSize();
-        try {
-            ObjectMetadata objectMetadata = this.objectContent(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-            fileSavePath = this.getPutDirectory(Objects.requireNonNull(multipartFile.getOriginalFilename()));
-            putObjectRequest = new PutObjectRequest(ossProperties.getBucketName(), fileSavePath, multipartFile.getInputStream(), objectMetadata);
-            oss.putObject(putObjectRequest);
-        } catch (IOException e) {
-            log.error("oss error", e);
-            throw new ServiceException("oss upload failed");
-        }
-        log.info("oss upload success, save path: {} , file size : {}", fileSavePath, size);
+        ObjectMetadata objectMetadata = this.objectContent(Objects.requireNonNull(fileName));
+        fileSavePath = this.getPutDirectory(Objects.requireNonNull(fileName));
+        putObjectRequest = new PutObjectRequest(ossProperties.getBucketName(), fileSavePath, inputStream, objectMetadata);
+        oss.putObject(putObjectRequest);
+        log.info("oss upload success, save path: {}", fileSavePath);
         return fileSavePath;
     }
 
-    public void getUploadPath(){
 
+
+    public String uploadFile(MultipartFile multipartFile) {
+        try {
+            return uploadFile(multipartFile.getInputStream(), multipartFile.getOriginalFilename());
+        } catch (IOException e) {
+            log.error("oss upload failed : {}", e.getMessage());
+            throw new ServiceException(e.getMessage());
+        }
     }
 
+    public InputStream getFileInputStream(String filePath) {
+        // 创建OSSClient实例。
+        OSSObject ossObject = oss.getObject(ossProperties.getBucketName(), filePath);
+        InputStream out = ossObject.getObjectContent();
+        byte[] bytes = toByteArray(out);
+        return new ByteArrayInputStream(bytes);
+    }
+
+
+
+    /**
+     * InputStream流转byte数组
+     *
+     * @param input
+     * @return
+     * @throws IOException
+     */
+    public byte[] toByteArray(InputStream input) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try {
+            byte[] buffer = new byte[input.available()];
+            int n = 0;
+            while (-1 != (n = input.read(buffer))) {
+                output.write(buffer, 0, n);
+            }
+        } catch (IOException exception) {
+            log.error("oss download inputStream failed : {}", exception.getMessage());
+            throw new ServiceException("oss download inputStream failed");
+        }
+        return output.toByteArray();
+    }
 
     /**
      * 根据上传的文件判断放到哪个文件夹
@@ -69,8 +102,8 @@ public class OssHelper {
      * @return 返回文件夹名称
      */
     public String getPutDirectory(String fileName) {
-        String uuid =  UUID.randomUUID().toString().replace("-", "");
-        String uuidName = uuid + fileName;
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        String uuidName = uuid + "-" +fileName;
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern(OssConstant.DATE_TIME));
         return datePath + "/" + uuidName;
     }
@@ -91,6 +124,66 @@ public class OssHelper {
     }
 
     /**
+     * 获取封装得MultipartFile
+     *
+     * @param inputStream inputStream
+     * @param fileName    fileName
+     * @return MultipartFile
+     */
+    public MultipartFile getMultipartFile(InputStream inputStream, String fileName) {
+        FileItem fileItem = createFileItem(inputStream, fileName);
+        //CommonsMultipartFile是feign对multipartFile的封装，但是要FileItem类对象
+        return new CommonsMultipartFile(fileItem);
+    }
+
+
+    /**
+     * FileItem类对象创建
+     *
+     * @param inputStream inputStream
+     * @param fileName    fileName
+     * @return FileItem
+     */
+    private FileItem createFileItem(InputStream inputStream, String fileName) {
+        FileItemFactory factory = new DiskFileItemFactory(16, null);
+        String textFieldName = "file";
+        FileItem item = factory.createItem(textFieldName, MediaType.MULTIPART_FORM_DATA_VALUE, true, fileName);
+        int bytesRead = 0;
+        byte[] buffer = new byte[10 * 1024 * 1024];
+        OutputStream os = null;
+        //使用输出流输出输入流的字节
+        try {
+            os = item.getOutputStream();
+            while ((bytesRead = inputStream.read(buffer, 0, 8192)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            inputStream.close();
+        } catch (IOException e) {
+            log.error("Stream copy exception", e);
+            throw new IllegalArgumentException("文件上传失败");
+        } finally {
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    log.error("Stream close exception", e);
+
+                }
+            }
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    log.error("Stream close exception", e);
+                }
+            }
+        }
+
+        return item;
+    }
+
+
+    /**
      * 判断上传文件的后缀
      *
      * @param fileName 文件后缀名
@@ -100,7 +193,7 @@ public class OssHelper {
         if (OssConstant.CONTENT_PDF.equalsIgnoreCase(fileName)) {
             return OssConstant.METADATA_PDF;
         }
-        if (OssConstant.APPLICATION_APK.equalsIgnoreCase(fileName)){
+        if (OssConstant.APPLICATION_APK.equalsIgnoreCase(fileName)) {
             return OssConstant.APPLICATION_OCTET;
         }
         if (OssConstant.CONTENT_XLS.equalsIgnoreCase(fileName)) {

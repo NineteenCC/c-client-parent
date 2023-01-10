@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,9 +24,17 @@ public class FileUtils {
 
     private static long FILE_MAX_SIZE = 5242880;
 
+    private static BigDecimal CONVENT_KB_TO_MB = new BigDecimal(1024 * 1024);
 
     public static boolean checkFileSize(long fileSize) {
-        return fileSize > FILE_MAX_SIZE;
+        return fileSize < FILE_MAX_SIZE;
+    }
+
+    public static BigDecimal conventKbToMb(BigDecimal kb){
+        if(null == kb){
+            return new BigDecimal(0);
+        }
+        return kb.divide(CONVENT_KB_TO_MB,2 ,BigDecimal.ROUND_UP);
     }
 
     /**

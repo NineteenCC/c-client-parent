@@ -1,6 +1,7 @@
 package com.c.cclientparent.fanyigou.requestpojo.result;
 
 
+import com.c.cclientparent.common.util.ServiceAssert;
 import lombok.Data;
 
 /**
@@ -54,5 +55,8 @@ public class BaseResult<T> {
         return new BaseResult<>(100, "请求成功");
     }
 
-
+    public T getData(){
+        ServiceAssert.isFalse(this.code != 100, "请求失败, 无法获取响应结果, 错误消息 : " + this.msg);
+        return data;
+    }
 }

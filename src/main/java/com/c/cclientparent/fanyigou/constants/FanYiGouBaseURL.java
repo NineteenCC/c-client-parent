@@ -38,12 +38,18 @@ public class FanYiGouBaseURL {
      */
     public static final String DOWNLOAD_FILE  = "/TranslateApi/api/downloadFile";
 
+    /**
+     * 上传文件检测页数
+     */
+    public final static String DETECT_PAGE_PATH = "/TranslateApi/api/detectDocPage";
 
-    //查询翻译路径
-    //public final static String TRANSLATE_GO_QUERY_PATH = "/TranslateApi/api/queryTransProgress";
 
-    //上传文件检测页数
-    //public final static String TRANSLATE_DETECT_PAGE_PATH = "/TranslateApi/api/detectDocPage";
+    /**
+     * 查询翻译详情
+     */
+    public final static String GO_QUERY_PATH = "/TranslateApi/api/queryTransProgress";
+
+
     //提交检测页数翻译
     //public final static String TRANSLATE_SUBMIT_DETECT_PAGE_PATH = "/TranslateApi/api/submitForDetectDoc";
     //转换文档

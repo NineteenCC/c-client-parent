@@ -4,7 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 import lombok.Data;
 
 /**
@@ -69,7 +70,7 @@ public class TranslateInfo {
      * 翻译时间
      */
     @TableField(value = "translate_time")
-    private Date translateTime;
+    private LocalDateTime translateTime;
 
     /**
      * 翻译状态(1.待翻译, 2. 已翻译. 3.其他)
@@ -81,7 +82,7 @@ public class TranslateInfo {
      * 是否删除
      */
     @TableField(value = "is_delete")
-    private Byte isDelete;
+    private Boolean isDelete;
 
     /**
      * 创建人
@@ -93,7 +94,7 @@ public class TranslateInfo {
      * 创建时间
      */
     @TableField(value = "create_time")
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 更新用户
@@ -105,5 +106,5 @@ public class TranslateInfo {
      * 更新时间
      */
     @TableField(value = "update_time")
-    private Date updateTime;
+    private LocalDateTime updateTime;
 }
